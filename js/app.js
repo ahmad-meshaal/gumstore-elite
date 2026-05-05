@@ -328,10 +328,22 @@ function bindCardEvents(isAdmin) {
   );
 }
 
+// ── View tracking ─────────────────────────────────────────────────
+const viewedThisSession = new Set();
+function trackView(id) {
+  if (viewedThisSession.has(id)) return;
+  viewedThisSession.add(id);
+  db.collection("products").doc(id).update({
+    views: firebase.firestore.FieldValue.increment(1)
+  }).catch(() => {});
+}
+
 // ── Product Detail ────────────────────────────────────────────────
 function renderDetail(id, isAdmin) {
   const p = products.find(x => x.id === id);
   if (!p) { appEl.innerHTML = `<div class="loading-msg">جاري التحميل...</div>`; return; }
+
+  trackView(id);
 
   const adminBtns = isAdmin ? `
     <div class="detail-admin-actions">
@@ -376,15 +388,31 @@ function renderDetail(id, isAdmin) {
 
 // ── Admin Dashboard ───────────────────────────────────────────────
 function renderAdmin(isAdmin) {
-  const rows = products.map(p => `
+  const totalViews   = products.reduce((s, p) => s + (p.views || 0), 0);
+  const totalRevenue = products.reduce((s, p) => s + (p.price || 0), 0);
+  const topProduct   = products.slice().sort((a, b) => (b.views || 0) - (a.views || 0))[0];
+
+  const rows = products.map(p => {
+    const views   = p.views || 0;
+    const barPct  = totalViews > 0 ? Math.round((views / totalViews) * 100) : 0;
+    return `
     <tr>
       <td>
         <div class="td-product">
           <img src="${esc(p.imageUrl)}" class="td-thumb" alt="${esc(p.title)}" />
-          <div><div class="td-title">${esc(p.title)}</div><div class="td-author">${esc(p.author || "")}</div></div>
+          <div>
+            <div class="td-title">${esc(p.title)}</div>
+            <div class="td-author">${esc(p.author || "")}</div>
+          </div>
         </div>
       </td>
       <td class="td-price">$${p.price?.toFixed(2)}</td>
+      <td>
+        <div class="td-views">
+          <span class="views-num">${iconEye(13)} ${views.toLocaleString("ar-SA")}</span>
+          <div class="views-bar-bg"><div class="views-bar-fill" style="width:${barPct}%"></div></div>
+        </div>
+      </td>
       <td>
         <div class="td-actions">
           <button class="btn-tbl edit" data-edit="${p.id}" title="تعديل">${iconEdit(16)}</button>
@@ -392,17 +420,56 @@ function renderAdmin(isAdmin) {
           <a href="#/product/${p.id}"  class="btn-tbl view" title="عرض">${iconExternal(16)}</a>
         </div>
       </td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 
   appEl.innerHTML = `
     <div class="admin-wrap">
       <div class="admin-header">
-        <h1>إدارة المنتجات</h1>
-        <span class="admin-count">إجمالي المنتجات: ${products.length}</span>
+        <h1>لوحة الإحصائيات</h1>
       </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">${iconBox(22)}</div>
+          <div class="stat-body">
+            <div class="stat-value">${products.length}</div>
+            <div class="stat-label">إجمالي المنتجات</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">${iconEye(22)}</div>
+          <div class="stat-body">
+            <div class="stat-value">${totalViews.toLocaleString("ar-SA")}</div>
+            <div class="stat-label">إجمالي المشاهدات</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">${iconStar(22)}</div>
+          <div class="stat-body">
+            <div class="stat-value">${topProduct ? esc(topProduct.title) : "—"}</div>
+            <div class="stat-label">الأكثر مشاهدة</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">${iconDollar(22)}</div>
+          <div class="stat-body">
+            <div class="stat-value">$${totalRevenue.toFixed(2)}</div>
+            <div class="stat-label">مجموع الأسعار</div>
+          </div>
+        </div>
+      </div>
+
       <div class="admin-table-wrap">
         <table>
-          <thead><tr><th>المنتج</th><th>السعر</th><th style="text-align:center">العمليات</th></tr></thead>
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>السعر</th>
+              <th>المشاهدات</th>
+              <th style="text-align:center">العمليات</th>
+            </tr>
+          </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -526,6 +593,10 @@ const iconShare    = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" 
 const iconArrow    = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
 const iconUpload   = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
 const iconExternal = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>`;
+const iconEye      = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const iconBox      = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`;
+const iconStar     = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const iconDollar   = s => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
 
 // ── XSS escape ────────────────────────────────────────────────────
 function esc(str) {
