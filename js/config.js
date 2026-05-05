@@ -24,6 +24,6 @@ const SITE_CONFIG = {
   adminEmail: "ahmad.meshaal.2040@gmail.com",
 
   // ── مفتاح ImgBB لرفع الصور (مجاني) — احصل عليه من imgbb.com/api
-  imgbbKey: "ضع_المفتاح_هنا",
+  imgbbKey: "a74e87cc60f37562c48adafa79b34aa7",
 
 };
