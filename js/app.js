@@ -570,20 +570,43 @@ productForm.addEventListener("submit", async e => {
   }
 });
 
-function uploadImage(file) {
-  return new Promise((resolve, reject) => {
-    const task = storage.ref(`products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`).put(file);
-    uploadWrap.classList.remove("hidden");
-    task.on("state_changed",
-      snap => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        progressBar.style.width = pct + "%"; progressPct.textContent = pct + "%";
-        submitBtn.innerHTML = `جاري الرفع ${pct}%...`;
-      },
-      reject,
-      async () => { resolve(await task.snapshot.ref.getDownloadURL()); uploadWrap.classList.add("hidden"); }
-    );
-  });
+async function uploadImage(file) {
+  const key = SITE_CONFIG.imgbbKey;
+  if (!key) throw new Error("imgbbKey غير موجود في config.js");
+
+  uploadWrap.classList.remove("hidden");
+
+  // محاكاة شريط التقدم
+  let pct = 0;
+  const fakeTimer = setInterval(() => {
+    pct = Math.min(pct + 8, 85);
+    progressBar.style.width = pct + "%";
+    progressPct.textContent = pct + "%";
+    submitBtn.innerHTML = `جاري الرفع ${pct}%...`;
+  }, 200);
+
+  try {
+    const form = new FormData();
+    form.append("key", key);
+    form.append("image", file);
+
+    const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
+    const json = await res.json();
+
+    if (!json.success) throw new Error(json.error?.message || "فشل رفع الصورة");
+
+    clearInterval(fakeTimer);
+    progressBar.style.width = "100%";
+    progressPct.textContent = "100%";
+    submitBtn.innerHTML = "تم الرفع ✓";
+    setTimeout(() => uploadWrap.classList.add("hidden"), 600);
+
+    return json.data.url;
+  } catch (err) {
+    clearInterval(fakeTimer);
+    uploadWrap.classList.add("hidden");
+    throw err;
+  }
 }
 
 // ── SVG icons ─────────────────────────────────────────────────────
