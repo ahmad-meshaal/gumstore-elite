@@ -23,4 +23,7 @@ const SITE_CONFIG = {
   // ── إيميل الأدمن
   adminEmail: "ahmad.meshaal.2040@gmail.com",
 
+  // ── مفتاح ImgBB لرفع الصور (مجاني) — احصل عليه من imgbb.com/api
+  imgbbKey: "ضع_المفتاح_هنا",
+
 };
