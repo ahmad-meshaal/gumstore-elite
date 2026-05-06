@@ -756,3 +756,41 @@ tr:hover { background: #fafafa; }
 }
 .views-bar-bg { height: 4px; background: var(--green-light); border-radius: 99px; overflow: hidden; }
 .views-bar-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.6s ease; }
+
+/* ══════════════════ TIKTOK ══════════════════ */
+.footer-social {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.tiktok-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111;
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.9;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.tiktok-link:hover { opacity: 1; transform: scale(1.04); }
+
+/* زر عائم */
+.fab-tiktok {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: 18px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  z-index: 90;
+  transition: transform 0.2s, box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fab-tiktok:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
