@@ -4,7 +4,7 @@ const DB_NAME     = SITE_CONFIG.firestoreDb;
 
 firebase.initializeApp(SITE_CONFIG.firebase);
 const auth    = firebase.auth();
-const db      = firebase.firestore();
+const db      = firebase.firestore(firebase.app(), DB_NAME);
 const storage = firebase.storage();
 
 document.title = SITE_CONFIG.siteName + " — تحف رقمية";
