@@ -4,7 +4,7 @@ const DB_NAME     = SITE_CONFIG.firestoreDb;
 
 firebase.initializeApp(SITE_CONFIG.firebase);
 const auth    = firebase.auth();
-const db      = firebase.firestore(firebase.app(), DB_NAME);
+const db      = firebase.firestore();
 const storage = firebase.storage();
 
 document.title = SITE_CONFIG.siteName + " — تحف رقمية";
@@ -221,10 +221,16 @@ function firebaseAuthError(code) {
 }
 
 // ── Firestore ─────────────────────────────────────────────────────
-db.collection("products").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-  products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  render();
-});
+db.collection("products").orderBy("createdAt", "desc").onSnapshot(
+  snapshot => {
+    products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  },
+  err => {
+    console.error("Firestore error:", err.code, err.message);
+    appEl.innerHTML = `<div class="empty-msg">خطأ في تحميل المنتجات: ${err.message}</div>`;
+  }
+);
 
 // ── Router ────────────────────────────────────────────────────────
 window.addEventListener("hashchange", render);
